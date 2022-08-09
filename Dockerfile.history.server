@@ -1,0 +1,21 @@
+ARG SPARK_IMAGE=gcr.io/spark-operator/spark:v3.1.1
+FROM ${SPARK_IMAGE}
+ARG spark_uid=185
+# Switch to user root so we can add additional jars, packages and configuration files.
+# Add project files
+USER root
+
+USER root
+
+RUN set -ex && \
+    mkdir -p /opt/spark/logs && \
+    chmod -R 777 /opt/spark/logs
+
+RUN chmod a+x /opt/decom.sh && \
+    chmod a+x /opt/entrypoint.sh && \
+    chmod -R 777 /tmp
+
+ENTRYPOINT [ "/opt/entrypoint.sh" ]
+
+# Specify the User that the actual main process will run as
+# USER ${spark_uid}
