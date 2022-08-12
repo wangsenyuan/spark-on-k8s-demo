@@ -1,0 +1,31 @@
+FROM spark:latest
+
+ARG spark_uid=185
+
+# Before building the docker image, first build and make a Spark distribution following
+# the instructions in https://spark.apache.org/docs/latest/building-spark.html.
+# If this docker file is being used in the context of building your images from a Spark
+# distribution, the docker build command should be invoked from the top level directory
+# of the Spark distribution. E.g.:
+# docker build -t spark:latest -f kubernetes/dockerfiles/spark/Dockerfile .
+
+USER root
+
+RUN set -ex && \
+    mkdir -p /app/data && \
+    mkdir -p /app/pod-templates && \
+    chmod 777 /app/data && \
+    mkdir -p /opt/spark/hadoop-conf && \
+    chmod -R 777 /opt/spark/hadoop-conf && \
+    mkdir -p /opt/spark/logs && \
+    chmod -R 777 /opt/spark/logs
+
+COPY target/scala-2.12/spark-sql-demo.jar /app
+COPY hadoop-conf/*.xml /opt/spark/hadoop-conf/
+
+ENV HADOOP_CONF_DIR=/opt/spark/hadoop-conf/
+
+ENTRYPOINT [ "/opt/entrypoint.sh" ]
+
+# Specify the User that the actual main process will run as
+USER ${spark_uid}

@@ -28,7 +28,8 @@ helm install sparkoperator spark-operator/spark-operator --namespace spark-opera
 ```docker
 git clone git@github.com:apache/spark.git
 cd spark
-dev/make-distribution.sh -Pkubernetes
+export MAVEN_OPTS="-Xss128m -Xmx2g -XX:ReservedCodeCacheSize=1g"
+dev/make-distribution.sh -Pkubernetes -Phadoop -Dhadoop.version=3.3.2 -Phive
 cd dist
 docker build -t spark:latest -f kubernetes/dockerfiles/spark/Dockerfile .
 

@@ -1,0 +1,82 @@
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: spark-hdfs-demo-cm
+  namespace: default
+data:
+  driver: |-
+    apiVersion: v1
+    kind: Pod
+    spec:
+      volumes:
+        - name: source-data-volume
+          emptyDir: {}
+        - name: metrics-files-volume
+          emptyDir: {}
+      containers:
+        - name: spark-hdfs-demo-driver
+  executor: |-
+    apiVersion: v1
+    kind: Pod
+    spec:
+      containers:
+        - name: spark-hdfs-demo-executor
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: spark-hdfs-job
+  namespace: default
+spec:
+  template:
+    spec:
+      containers:
+        - name: spark
+          image: spark:latest
+          imagePullPolicy: Never
+          args: [
+            "/bin/sh",
+            "-c",
+            "/opt/spark/bin/spark-submit \
+            --master k8s://https://kubernetes.default.svc.cluster.local:443 \
+            --deploy-mode cluster \
+            --name spark-hdfs-demo \
+            --class com.wsy.demo.hdfs.Main \
+            --conf spark.kubernetes.authenticate.driver.serviceAccountName=sparkx \
+            --conf spark.jars.ivy=/tmp/.ivy \
+            --conf spark.dynamicAllocation.enabled=true \
+            --conf spark.dynamicAllocation.shuffleTracking.enabled=true \
+            --conf spark.dynamicAllocation.shuffleTracking.timeout=600 \
+            --conf spark.dynamicAllocation.minExecutors=2 \
+            --conf spark.dynamicAllocation.maxExecutors=2 \
+            --conf spark.kubernetes.allocation.batch.size=10 \
+            --conf spark.dynamicAllocation.executorAllocationRatio=1 \
+            --conf spark.dynamicAllocation.schedulerBacklogTimeout=1 \
+            --conf spark.driver.memory=1G \
+            --conf spark.executor.memory=1G \
+            --conf spark.executor.cores=2 \
+            --conf spark.sql.shuffle.partitions=10 \
+            --conf spark.kubernetes.container.image=spark-sql-demo:latest
+            --conf spark.kubernetes.container.image.pullPolicy=Never \
+            --conf spark.kubernetes.namespace=default \
+            --conf spark.kubernetes.driver.podTemplateFile='/opt/spark/conf/driver_pod_template.yml' \
+            --conf spark.kubernetes.executor.podTemplateFile='/opt/spark/conf/executor_pod_template.yml' \
+            local:///app/spark-sql-demo.jar "
+          ]
+          volumeMounts:
+            - name: spark-config
+              mountPath: /opt/spark/conf/driver_pod_template.yml
+              subPath: driver
+            - name: spark-config
+              mountPath: /opt/spark/conf/executor_pod_template.yml
+              subPath: executor
+      serviceAccountName: sparkx
+      restartPolicy: Never
+      volumes:
+        - name: spark-config
+          configMap:
+            name: spark-hdfs-demo-cm
+            defaultMode: 420
+  backoffLimit: 4
