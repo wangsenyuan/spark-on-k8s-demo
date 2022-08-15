@@ -16,12 +16,18 @@ data:
           emptyDir: {}
       containers:
         - name: spark-streaming-demo-driver
+          env:
+            - name: CHECKPOINT_DIR
+              value: "hdfs://192.168.95.152:9000/user/spark/checkpoints/"
   executor: |-
     apiVersion: v1
     kind: Pod
     spec:
       containers:
         - name: spark-streaming-demo-executor
+          env:
+            - name: CHECKPOINT_DIR
+              value: "hdfs://192.168.95.152:9000/user/spark/checkpoints/"
 
 ---
 apiVersion: batch/v1
