@@ -2,7 +2,7 @@
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: spark-streaming-pod-templates
+  name: spark-greenplum-pod-templates
   namespace: default
 data:
   driver: |-
@@ -15,25 +15,37 @@ data:
         - name: metrics-files-volume
           emptyDir: {}
       containers:
-        - name: spark-streaming-demo-driver
+        - name: spark-greenplum-demo-driver
           env:
             - name: CHECKPOINT_DIR
               value: "hdfs://192.168.95.152:9000/user/spark/checkpoints/"
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
   executor: |-
     apiVersion: v1
     kind: Pod
     spec:
       containers:
-        - name: spark-streaming-demo-executor
+        - name: spark-greenplum-demo-executor
+          ports:
+            - containerPort: 12900
+              hostPort: 12900
           env:
             - name: CHECKPOINT_DIR
               value: "hdfs://192.168.95.152:9000/user/spark/checkpoints/"
+          env:
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
 
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: spark-streaming-job
+  name: spark-greenplum-job
   namespace: default
 spec:
   template:
@@ -48,8 +60,9 @@ spec:
             "/opt/spark/bin/spark-submit \
             --master k8s://https://kubernetes.default.svc.cluster.local:443 \
             --deploy-mode cluster \
-            --name spark-streaming-demo \
-            --class com.wsy.demo.streaming.Main \
+            --name spark-greenplum-demo \
+            --jars local:///opt/lib/greenplum-connector-apache-spark-scala_2.12-2.1.3.jar \
+            --class com.wsy.demo.greenplum.Main \
             --conf spark.kubernetes.authenticate.driver.serviceAccountName=sparkx \
             --conf spark.jars.ivy=/tmp/.ivy \
             --conf spark.dynamicAllocation.enabled=true \
@@ -64,8 +77,8 @@ spec:
             --conf spark.executor.memory=1G \
             --conf spark.executor.cores=2 \
             --conf spark.sql.shuffle.partitions=10 \
-            --conf spark.kubernetes.container.image=registry.cn-hangzhou.aliyuncs.com/fesco/spark-sql-demo:latest
-            --conf spark.kubernetes.container.image.pullPolicy=IfNotPresent \
+            --conf spark.kubernetes.container.image=registry.cn-hangzhou.aliyuncs.com/fesco/spark-sql-demo:0.4
+            --conf spark.kubernetes.container.image.pullPolicy=Always \
             --conf spark.kubernetes.namespace=default \
             --conf spark.kubernetes.driver.podTemplateFile='/opt/spark/conf/driver_pod_template.yml' \
             --conf spark.kubernetes.executor.podTemplateFile='/opt/spark/conf/executor_pod_template.yml' \
@@ -83,6 +96,6 @@ spec:
       volumes:
         - name: spark-pod-template
           configMap:
-            name: spark-streaming-pod-templates
+            name: spark-greenplum-pod-templates
             defaultMode: 420
   backoffLimit: 4

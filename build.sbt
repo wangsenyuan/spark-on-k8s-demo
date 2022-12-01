@@ -13,9 +13,9 @@ val sparkLibs = Seq(
 lazy val commonSettings = Seq(
   organization := "com.wsy",
   version := "0.0.1-SNAPSHOT",
-  Compile / scalaSource := baseDirectory.value / "src",
-  Test / scalaSource := baseDirectory.value / "test",
-  Test / resourceDirectory := baseDirectory.value / "test" / "resources",
+  Compile / scalaSource := baseDirectory.value / "src" / "main" / "scala",
+  Test / scalaSource := baseDirectory.value / "src" / "test" / "scala",
+  Test / resourceDirectory := baseDirectory.value / "src" / "test" / "resources",
   javacOptions ++= Seq(),
   scalacOptions ++= Seq(
     "-deprecation",
