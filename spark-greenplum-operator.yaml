@@ -10,43 +10,38 @@ data:
     kind: Pod
     spec:
       volumes:
-      - name: source-data-volume
-        emptyDir: {}
-      - name: metrics-files-volume
-        emptyDir: {}
+        - name: source-data-volume
+          emptyDir: {}
+        - name: metrics-files-volume
+          emptyDir: {}
       containers:
-      - name: spark-greenplum-demo-driver
-        env:
-        - name: CHECKPOINT_DIR
-          value: "hdfs://192.168.95.152:9000/user/spark/checkpoints/"
-        - name: NODE_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.hostIP
+        - name: spark-greenplum-demo-driver
+          env:
+            - name: CHECKPOINT_DIR
+              value: "hdfs://192.168.95.152:9000/user/spark/checkpoints/"
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
   executor: |-
     apiVersion: v1
     kind: Pod
     spec:
       containers:
-      - name: spark-greenplum-demo-executor
-        ports:
-        - containerPort: 12900
-          hostPort: 12900
-        env:
-        - name: CHECKPOINT_DIR
-          value: "hdfs://192.168.95.152:9000/user/spark/checkpoints/"
-        - name: NODE_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.hostIP
-  spark-log4j: |-
-    rootLogger.level = info
-    rootLogger.appenderRef.stdout.ref = console
-    appender.console.type = Console
-    appender.console.name = console
-    appender.console.target = SYSTEM_ERR
-    appender.console.layout.type = PatternLayout
-    appender.console.layout.pattern = %d{yy/MM/dd HH:mm:ss} %p %c{1}: %m%n%ex
+        - name: spark-greenplum-demo-executor
+          ports:
+            - containerPort: 12900
+              hostPort: 12900
+              name: gpfdist_port
+            - containerPort: 8080
+              name: http_port
+          env:
+            - name: CHECKPOINT_DIR
+              value: "hdfs://192.168.95.152:9000/user/spark/checkpoints/"
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
 
 ---
 apiVersion: batch/v1
@@ -59,7 +54,7 @@ spec:
     spec:
       containers:
         - name: spark
-          image: registry.cn-hangzhou.aliyuncs.com/fesco/spark:v3.4.0
+          image: registry.cn-hangzhou.aliyuncs.com/fesco/spark:v3.3.1
           imagePullPolicy: IfNotPresent
           args: [
             "/bin/sh",
@@ -84,7 +79,7 @@ spec:
             --conf spark.executor.memory=1G \
             --conf spark.executor.cores=2 \
             --conf spark.sql.shuffle.partitions=10 \
-            --conf spark.kubernetes.container.image=registry.cn-hangzhou.aliyuncs.com/fesco/spark-sql-demo:1.2 \
+            --conf spark.kubernetes.container.image=registry.cn-hangzhou.aliyuncs.com/fesco/spark-sql-demo:0.5
             --conf spark.kubernetes.container.image.pullPolicy=Always \
             --conf spark.kubernetes.namespace=default \
             --conf spark.kubernetes.executor.deleteOnTermination=false \
@@ -99,9 +94,6 @@ spec:
             - name: spark-pod-template
               mountPath: /opt/spark/conf/executor_pod_template.yml
               subPath: executor
-            - name: spark-pod-template
-              mountPath: /opt/spark/conf/log4j2.properties
-              subPath: spark-log4j
       serviceAccountName: sparkx
       restartPolicy: Never
       volumes:
