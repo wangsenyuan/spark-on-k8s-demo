@@ -6,7 +6,6 @@ val sparkLibs = Seq(
   "org.apache.spark" %% "spark-core" % sparkVersion,
   "org.apache.spark" %% "spark-sql" % sparkVersion,
   "org.apache.spark" %% "spark-streaming" % sparkVersion
-
 )
 
 // JAR build settings
@@ -23,7 +22,8 @@ lazy val commonSettings = Seq(
     "-language:implicitConversions",
     "-language:postfixOps"
   ),
-  libraryDependencies ++= sparkLibs
+  libraryDependencies ++= sparkLibs,
+  libraryDependencies += "org.postgresql" % "postgresql" % "42.5.1"
 )
 
 

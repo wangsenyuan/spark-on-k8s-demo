@@ -18,7 +18,7 @@ RUN set -ex && \
     echo "auth required pam_wheel.so use_uid" >> /etc/pam.d/su && \
     chgrp root /etc/passwd && chmod ug+rw /etc/passwd
 
-ADD lib/greenplum-connector-apache-spark-scala_2.12-2.1.3.jar /opt/lib/
+# ADD lib/postgresql-42.5.1.jar /opt/lib/
 ADD target/scala-2.12/spark-sql-demo.jar /opt/lib/
 
 RUN chmod a+x /opt/decom.sh && \

@@ -11,34 +11,22 @@ object Main {
     println("--- env map ---- ")
 
     val spark = createSparkContext()
-    import spark.implicits._
 
-    //    val gpdf = spark.read.greenplum(url, tblname, jprops)
-    def randomInt1to100 = scala.util.Random.nextInt(100) + 1
+    val jdbcDF = spark.read
+      .format("jdbc")
+      .option("driver", "org.postgresql.Driver")
+      .option("url", "jdbc:postgresql://118.31.105.14:3559/prod_perf_test")
+      .option("dbtable", "(select gp_segment_id, * from custom_reimburse_data_detail) as custom_reimburse_data_detail")
+      .option("user", "prod_user1")
+      .option("password", "VeeEdD9SVm2SQj")
+      .option("partitionColumn", "gp_segment_id")
+      .option("numPartitions", 4)
+      .option("lowerBound", 0)
+      .option("upperBound", 19)
+      .load()
 
-    val df = spark.sparkContext.parallelize(
-      Seq.fill(100) {
-        (randomInt1to100, randomInt1to100, randomInt1to100)
-      }
-    ).toDF("col1", "col2", "col3")
 
-    df.show(false)
-
-    val gscWriteOptionMap = Map(
-      "url" -> "jdbc:postgresql://192.168.95.153:5432/wsy",
-      "user" -> "wsy_user1",
-      "password" -> "VeeEdD9SVm2SQj",
-      "dbschema" -> "public",
-      "dbtable" -> "test_write",
-      "server.port" -> "12900",
-      "server.useHostname" -> "false",
-      "server.hostEnv" -> "env.NODE_IP"
-    )
-
-    import org.apache.spark.sql.SaveMode
-
-    df.write.format("greenplum").options(gscWriteOptionMap).mode(SaveMode.Overwrite).save()
-
+    println(jdbcDF.count())
   }
 
 
