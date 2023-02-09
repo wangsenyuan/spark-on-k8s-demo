@@ -2,6 +2,7 @@ package com.wsy.demo.greenplum
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.functions.avg
 
 object Main {
 
@@ -11,6 +12,8 @@ object Main {
     println("--- env map ---- ")
 
     val spark = createSparkContext()
+
+    import spark.implicits._
 
     val jdbcDF = spark.read
       .format("jdbc")
@@ -25,8 +28,14 @@ object Main {
       .option("upperBound", 19)
       .load()
 
+    //    println(jdbcDF.count())
 
-    println(jdbcDF.count())
+    val df1 = jdbcDF.where(jdbcDF("ent_code") === "EC1609211LPZWMBK").toDF()
+    val df2 = df1.groupBy("form_cover_department_code").agg(avg($"form_amount").alias("form_amount"))
+
+    df2.printSchema()
+
+    df2.show(100)
   }
 
 

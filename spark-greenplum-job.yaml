@@ -72,8 +72,8 @@ spec:
             --conf spark.dynamicAllocation.enabled=true \
             --conf spark.dynamicAllocation.shuffleTracking.enabled=true \
             --conf spark.dynamicAllocation.shuffleTracking.timeout=600 \
-            --conf spark.dynamicAllocation.minExecutors=4 \
-            --conf spark.dynamicAllocation.maxExecutors=4 \
+            --conf spark.dynamicAllocation.minExecutors=2 \
+            --conf spark.dynamicAllocation.maxExecutors=2 \
             --conf spark.kubernetes.allocation.batch.size=10 \
             --conf spark.dynamicAllocation.executorAllocationRatio=1 \
             --conf spark.dynamicAllocation.schedulerBacklogTimeout=1 \
@@ -81,7 +81,7 @@ spec:
             --conf spark.executor.memory=1G \
             --conf spark.executor.cores=2 \
             --conf spark.sql.shuffle.partitions=10 \
-            --conf spark.kubernetes.container.image=registry.cn-hangzhou.aliyuncs.com/fesco/spark-sql-demo:1.8 \
+            --conf spark.kubernetes.container.image=registry.cn-hangzhou.aliyuncs.com/fesco/spark-sql-demo:2.0 \
             --conf spark.kubernetes.container.image.pullPolicy=Always \
             --conf spark.kubernetes.namespace=default \
             --conf spark.kubernetes.executor.deleteOnTermination=false \

@@ -4,25 +4,19 @@ metadata:
   name: history-server-logs-pv
 spec:
   capacity:
-    storage: 1Gi
+    storage: 10Gi
   volumeMode: Filesystem
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Delete
-  storageClassName: local-storage
-  local:
-    path: "/Users/wangsenyuan/git/github/spark-sql-demo/spark-logs"
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-        - matchExpressions:
-            - key: kubernetes.io/hostname
-              operator: In
-              values:
-                - minikube
+  storageClassName: spark-logs
+  nfs:
+    path: /maycur/spark_logs/
+    server: 192.168.95.187
+    readOnly: false
+
 
 ---
-
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -34,8 +28,8 @@ spec:
   volumeMode: Filesystem
   resources:
     requests:
-      storage: 500Mi
-  storageClassName: local-storage
+      storage: 10Gi
+  storageClassName: spark-logs
 
 ---
 
@@ -57,8 +51,8 @@ spec:
     spec:
       containers:
         - name: spark-history-server
-          image: spark-history-server:latest
-          imagePullPolicy: Never
+          image: registry.cn-hangzhou.aliyuncs.com/fesco/spark-history-server:v3.4.0
+          imagePullPolicy: IfNotPresent
           resources:
             requests:
               memory: "512Mi"
@@ -85,6 +79,19 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: history-server-logs-pvc
-            readOnly: true
+            readOnly: false
 
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-history-server
+  namespace: spark-apps
+spec:
+  selector:
+    app: spark-history-server
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 18080
+      targetPort: 18080

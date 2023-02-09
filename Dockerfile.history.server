@@ -1,4 +1,4 @@
-ARG SPARK_IMAGE=gcr.io/spark-operator/spark:v3.1.1
+ARG SPARK_IMAGE=registry.cn-hangzhou.aliyuncs.com/fesco/spark:v3.4.0
 FROM ${SPARK_IMAGE}
 ARG spark_uid=185
 # Switch to user root so we can add additional jars, packages and configuration files.
