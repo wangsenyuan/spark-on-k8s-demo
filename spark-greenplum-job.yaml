@@ -2,8 +2,24 @@
 kind: ConfigMap
 apiVersion: v1
 metadata:
+  name: spark-greenplum-log4j-templates
+  namespace: spark-apps
+data:
+  spark-log4j: |
+    rootLogger.level = info
+    rootLogger.appenderRef.stdout.ref = console
+    appender.console.type = Console
+    appender.console.name = console
+    appender.console.target = SYSTEM_ERR
+    appender.console.layout.type = PatternLayout
+    appender.console.layout.pattern = %d{yy/MM/dd HH:mm:ss} %p %c{1}: %m%n%ex
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
   name: spark-greenplum-pod-templates
-  namespace: default
+  namespace: spark-apps
 data:
   driver: |-
     apiVersion: v1
@@ -14,11 +30,24 @@ data:
         emptyDir: {}
       - name: metrics-files-volume
         emptyDir: {}
+      - name: events
+        persistentVolumeClaim:
+          claimName: history-server-logs-pvc
+          readOnly: false
+      - name: log4j
+        configMap:
+          name: spark-greenplum-log4j-templates
+          items:
+          - key: spark-log4j
+            path: log4j2.properties
       containers:
       - name: spark-greenplum-demo-driver
+        volumeMounts:
+        - name: events
+          mountPath: /tmp/spark-events
+        - name: log4j
+          mountPath: /opt/spark/conf/log4j2.properties
         env:
-        - name: CHECKPOINT_DIR
-          value: "hdfs://192.168.95.152:9000/user/spark/checkpoints/"
         - name: NODE_IP
           valueFrom:
             fieldRef:
@@ -27,37 +56,43 @@ data:
     apiVersion: v1
     kind: Pod
     spec:
+      volumes:
+      - name: events
+        persistentVolumeClaim:
+          claimName: history-server-logs-pvc
+          readOnly: false
+      - name: log4j
+        configMap:
+          name: spark-greenplum-log4j-templates
+          items:
+          - key: spark-log4j
+            path: log4j2.properties
       containers:
       - name: spark-greenplum-demo-executor
+        volumeMounts:
+        - name: events
+          mountPath: /tmp/spark-events
+        - name: log4j
+          mountPath: /opt/spark/conf/
         env:
-        - name: CHECKPOINT_DIR
-          value: "hdfs://192.168.95.152:9000/user/spark/checkpoints/"
         - name: NODE_IP
           valueFrom:
             fieldRef:
               fieldPath: status.hostIP
-  spark-log4j: |-
-    rootLogger.level = info
-    rootLogger.appenderRef.stdout.ref = console
-    appender.console.type = Console
-    appender.console.name = console
-    appender.console.target = SYSTEM_ERR
-    appender.console.layout.type = PatternLayout
-    appender.console.layout.pattern = %d{yy/MM/dd HH:mm:ss} %p %c{1}: %m%n%ex
 
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: spark-greenplum-job
-  namespace: default
+  namespace: spark-apps
 spec:
   ttlSecondsAfterFinished: 100
   template:
     spec:
       containers:
         - name: spark
-          image: registry.cn-hangzhou.aliyuncs.com/fesco/spark:v3.4.0
+          image: registry.cn-hangzhou.aliyuncs.com/fesco/spark-demo:v3.4.0
           imagePullPolicy: IfNotPresent
           args: [
             "/bin/sh",
@@ -67,6 +102,7 @@ spec:
             --deploy-mode cluster \
             --name spark-greenplum-demo \
             --class com.wsy.demo.greenplum.Main \
+            --conf spark.kubernetes.namespace=spark-apps \
             --conf spark.kubernetes.authenticate.driver.serviceAccountName=sparkx \
             --conf spark.jars.ivy=/tmp/.ivy \
             --conf spark.dynamicAllocation.enabled=true \
@@ -80,10 +116,11 @@ spec:
             --conf spark.driver.memory=1G \
             --conf spark.executor.memory=1G \
             --conf spark.executor.cores=2 \
+            --conf spark.eventLog.enabled=true \
+            --conf spark.eventLog.dir=/tmp/spark-events \
             --conf spark.sql.shuffle.partitions=10 \
-            --conf spark.kubernetes.container.image=registry.cn-hangzhou.aliyuncs.com/fesco/spark-sql-demo:2.0 \
+            --conf spark.kubernetes.container.image=registry.cn-hangzhou.aliyuncs.com/fesco/spark-demo:v3.4.0 \
             --conf spark.kubernetes.container.image.pullPolicy=Always \
-            --conf spark.kubernetes.namespace=default \
             --conf spark.kubernetes.executor.deleteOnTermination=false \
             --conf spark.kubernetes.driver.podTemplateFile='/opt/spark/conf/driver_pod_template.yml' \
             --conf spark.kubernetes.executor.podTemplateFile='/opt/spark/conf/executor_pod_template.yml' \
@@ -96,9 +133,6 @@ spec:
             - name: spark-pod-template
               mountPath: /opt/spark/conf/executor_pod_template.yml
               subPath: executor
-            - name: spark-pod-template
-              mountPath: /opt/spark/conf/log4j2.properties
-              subPath: spark-log4j
       serviceAccountName: sparkx
       restartPolicy: Never
       volumes:
