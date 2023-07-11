@@ -1,0 +1,81 @@
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: spark-greenplum-log4j-templates
+  namespace: spark-apps
+data:
+  spark-log4j: |
+    rootLogger.level = info
+    rootLogger.appenderRef.stdout.ref = console
+    appender.console.type = Console
+    appender.console.name = console
+    appender.console.target = SYSTEM_ERR
+    appender.console.layout.type = PatternLayout
+    appender.console.layout.pattern = %d{yy/MM/dd HH:mm:ss} %p %c{1}: %m%n%ex
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: spark-greenplum-pod-templates
+  namespace: spark-apps
+data:
+  driver: |-
+    apiVersion: v1
+    kind: Pod
+    spec:
+      volumes:
+      - name: source-data-volume
+        emptyDir: {}
+      - name: metrics-files-volume
+        emptyDir: {}
+      - name: events
+        persistentVolumeClaim:
+          claimName: history-server-logs-pvc
+          readOnly: false
+      - name: log4j
+        configMap:
+          name: spark-greenplum-log4j-templates
+          items:
+          - key: spark-log4j
+            path: log4j2.properties
+      containers:
+      - name: spark-greenplum-demo-driver
+        volumeMounts:
+        - name: events
+          mountPath: /tmp/spark-events
+        - name: log4j
+          mountPath: /opt/spark/conf/log4j2.properties
+        env:
+        - name: NODE_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+  executor: |-
+    apiVersion: v1
+    kind: Pod
+    spec:
+      volumes:
+      - name: events
+        persistentVolumeClaim:
+          claimName: history-server-logs-pvc
+          readOnly: false
+      - name: log4j
+        configMap:
+          name: spark-greenplum-log4j-templates
+          items:
+          - key: spark-log4j
+            path: log4j2.properties
+      containers:
+      - name: spark-greenplum-demo-executor
+        volumeMounts:
+        - name: events
+          mountPath: /tmp/spark-events
+        - name: log4j
+          mountPath: /opt/spark/conf/
+        env:
+        - name: NODE_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP

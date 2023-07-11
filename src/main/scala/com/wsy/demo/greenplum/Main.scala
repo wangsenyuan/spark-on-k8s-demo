@@ -4,12 +4,26 @@ import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.avg
 
+import java.io.File
+
 object Main {
 
   def main(args: Array[String]): Unit = {
     println("--- env map ---- ")
     println(scala.sys.env.toMap)
     println("--- env map ---- ")
+
+    val dir = new File("/app/data/params")
+
+    println("--- args ---")
+
+    dir.listFiles(_.isFile).foreach(file => {
+      println(s"-- ${file.getName} --")
+      val content = scala.io.Source.fromFile(file).mkString
+      println(content)
+    })
+
+    println("--- args ---")
 
     val spark = createSparkContext()
 

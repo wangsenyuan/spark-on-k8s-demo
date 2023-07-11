@@ -2,15 +2,15 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: spark-greenplum-job
-  namespace: spark-apps
+  name: spark-pi-job
+  namespace: datasets-engine
 spec:
   ttlSecondsAfterFinished: 100
   template:
     spec:
       containers:
         - name: spark
-          image: registry.cn-hangzhou.aliyuncs.com/fesco/spark-demo:v3.4.0
+          image: registry.cn-hangzhou.aliyuncs.com/fesco/spark-sql-demo:v3.4.1
           imagePullPolicy: IfNotPresent
           args: [
             "/bin/sh",
@@ -18,9 +18,9 @@ spec:
             "/opt/spark/bin/spark-submit \
             --master k8s://https://kubernetes.default.svc.cluster.local:443 \
             --deploy-mode cluster \
-            --name spark-greenplum-demo \
-            --class com.wsy.demo.greenplum.Main \
-            --conf spark.kubernetes.namespace=spark-apps \
+            --name spark-pi-demo \
+            --class com.wsy.demo.pi.Main \
+            --conf spark.kubernetes.namespace=datasets-engine \
             --conf spark.kubernetes.authenticate.driver.serviceAccountName=sparkx \
             --conf spark.jars.ivy=/tmp/.ivy \
             --conf spark.dynamicAllocation.enabled=true \
@@ -43,7 +43,6 @@ spec:
             --conf spark.kubernetes.executor.deleteOnTermination=false \
             --conf spark.kubernetes.driver.podTemplateFile='/opt/spark/conf/driver_pod_template.yml' \
             --conf spark.kubernetes.executor.podTemplateFile='/opt/spark/conf/executor_pod_template.yml' \
-            --conf spark.kubernetes.driver.secrets.params=/app/data/params
             local:///opt/lib/spark-sql-demo.jar \
             "
           ]
@@ -59,6 +58,6 @@ spec:
       volumes:
         - name: spark-pod-template
           configMap:
-            name: spark-greenplum-pod-templates
+            name: datasets-engine-pod-templates
             defaultMode: 420
   backoffLimit: 4

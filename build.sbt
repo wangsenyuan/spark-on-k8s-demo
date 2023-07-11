@@ -1,4 +1,4 @@
-val sparkVersion = "3.1.1"
+val sparkVersion = "3.4.1"
 
 ThisBuild / scalaVersion := "2.12.16"
 

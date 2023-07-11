@@ -83,6 +83,7 @@ case class FirstPredicateAggregateWindowFunction(predicate: Expression,
   override lazy val evaluateExpression: Expression =
     If(EqualNullSafe(counter, one), valueBefore, valueAfter)
 
+  override protected def withNewChildrenInternal(newChildren: IndexedSeq[Expression]): Expression = ???
 }
 
 object FirstPredicateAggregateWindowFunction {

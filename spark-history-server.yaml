@@ -63,7 +63,7 @@ spec:
             - name: SPARK_NO_DAEMONIZE
               value: "false"
             - name: SPARK_HISTORY_OPTS
-              value: "-Dspark.history.fs.logDirectory=/tmp/spark-events"
+              value: "-Dspark.history.fs.logDirectory=/tmp/spark-events -Dspark.history.fs.cleaner.enabled=false"
             - name: SPARK_CONF_DIR
               value: /opt/spark/conf
           ports:

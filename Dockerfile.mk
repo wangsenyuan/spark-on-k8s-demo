@@ -23,7 +23,8 @@ ADD target/scala-2.12/spark-sql-demo.jar /opt/lib/
 
 RUN chmod a+x /opt/decom.sh && \
     chmod a+x /opt/entrypoint.sh && \
-    chmod -R 777 /tmp
+    chmod -R 777 /tmp && \
+    chmod -R 777 /app/data
 
 ENTRYPOINT [ "/opt/entrypoint.sh" ]
 
